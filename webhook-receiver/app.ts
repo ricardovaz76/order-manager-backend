@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { supabase } from "../webhook-receiver/lib/supabase";
+import { supabase } from "./lib/supabase";
 import { MessengerWebhookSchema } from "./validation/messengerWebhookSchema";
 import { extractOrder } from "./llm/extractOrder";
 import { writeOrderExtraction } from "./llm/writeOrderExtraction";
@@ -39,7 +39,7 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
   const rawBody = event.isBase64Encoded
     ? Buffer.from(event.body ?? "", "base64").toString("utf-8")
     : (event.body ?? "");
-    
+
   const signatureHeader = event.headers["x-hub-signature-256"] ?? event.headers["X-Hub-Signature-256"];
 
   if (!isValidSignature(rawBody, signatureHeader ?? null)) {
