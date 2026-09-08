@@ -18,6 +18,7 @@
     "@supabase/supabase-js": "^2.109.0",
     "esbuild": "^0.14.14",
     "langchain": "^1.5.10",
+    "ws": "^8.21.3",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -25,6 +26,7 @@
     "@types/aws-lambda": "^8.10.92",
     "@types/jest": "^29.2.0",
     "@types/node": "^20.19.43",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^5.10.2",
     "@typescript-eslint/parser": "^5.10.2",
     "eslint": "^8.8.0",
