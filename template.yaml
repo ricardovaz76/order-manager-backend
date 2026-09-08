@@ -3,32 +3,58 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   restaurant-app-backend
 
-  Sample SAM Template for restaurant-app-backend
+  Meta Messenger webhook receiver + LLM order extraction pipeline
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 3
-
-    # You can add LoggingConfig parameters such as the Logformat, Log Group, and SystemLogLevel or ApplicationLogLevel. Learn more here https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#sam-function-loggingconfig.
+    Timeout: 20
     LoggingConfig:
       LogFormat: JSON
+
+Parameters:
+  SupabaseUrl:
+    Type: String
+  SupabaseServiceRoleKey:
+    Type: String
+    NoEcho: true
+  MetaVerifyToken:
+    Type: String
+    NoEcho: true
+  MetaAppSecret:
+    Type: String
+    NoEcho: true
+  AnthropicApiKey:
+    Type: String
+    NoEcho: true
+
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  WebhookFunction:
+    Type: AWS::Serverless::Function
     Properties:
-      CodeUri: hello-world/
-      Handler: app.lambdaHandler
+      CodeUri: webhook-receiver/
+      Handler: app.handler
       Runtime: nodejs20.x
       Architectures:
       - x86_64
+      Environment:
+        Variables:
+          SUPABASE_URL: !Ref SupabaseUrl
+          SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceRoleKey
+          META_VERIFY_TOKEN: !Ref MetaVerifyToken
+          META_APP_SECRET: !Ref MetaAppSecret
+          ANTHROPIC_API_KEY: !Ref AnthropicApiKey
       Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        WebhookVerify:
+          Type: Api
           Properties:
-            Path: /hello
+            Path: /webhook
             Method: get
-    Metadata: # Manage esbuild properties
+        WebhookReceive:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: post
+    Metadata:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
@@ -38,16 +64,12 @@ Resources:
         - app.ts
 
 Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: API Gateway endpoint URL for Prod stage for Hello World 
-      function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/hello/"
-  HelloWorldFunction:
-    Description: Hello World Lambda Function ARN
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: Implicit IAM Role created for Hello World function
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  WebhookApi:
+    Description: API Gateway endpoint URL for Prod stage for the webhook function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/webhook/"
+  WebhookFunction:
+    Description: Webhook Lambda Function ARN
+    Value: !GetAtt WebhookFunction.Arn
+  WebhookFunctionIamRole:
+    Description: Implicit IAM Role created for the webhook function
+    Value: !GetAtt WebhookFunctionRole.Arn
