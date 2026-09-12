@@ -1,7 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { supabase } from "./lib/supabase";
 
-const DB_WEBHOOK_SECRET = "";
+const DB_WEBHOOK_SECRET = process.env.DB_WEBHOOK_SECRET;
 const EXPO_PUSH_URL = "http://exp.host/--/api/v2/push/send";
 
 interface SupabaseWebhookPayload {
