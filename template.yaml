@@ -26,6 +26,9 @@ Parameters:
   AnthropicApiKey:
     Type: String
     NoEcho: true
+  DbWebhookSecret:
+    Type: String
+    NoEcho: true
 
 Resources:
   WebhookFunction:
@@ -62,6 +65,33 @@ Resources:
         Sourcemap: true
         EntryPoints:
         - app.ts
+  NotificationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: notifications/
+      Handler: app.handler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          SUPABASE_URL: !Ref SupabaseUrl
+          SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceRoleKey
+          DB_WEBHOOK_SECRET: !Ref DbWebhookSecret
+      Events:
+        NotificationsReceive:
+          Type: Api
+          Properties:
+            Path: /notifications
+            Method: post
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties: 
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+        - app.ts
 
 Outputs:
   WebhookApi:
@@ -73,3 +103,9 @@ Outputs:
   WebhookFunctionIamRole:
     Description: Implicit IAM Role created for the webhook function
     Value: !GetAtt WebhookFunctionRole.Arn
+  NotificationsApi:
+    Description: API Gateway endpoint URL for Prod stage for the notifications function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/notifications"
+  NotificationsFunctionIamRole:
+    Description: Implicit IAM Role created for the notifications function
+    Value: !GetAtt NotificationsFunctionRole.Arn
