@@ -1,12 +1,12 @@
 {
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",
+    "esbuild": "^0.28.2",
     "ws": "^8.21.3"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.163",
     "@types/node": "^22.20.2",
-    "@types/ws": "^8.18.1",
-    "esbuild": "^0.28.2"
+    "@types/ws": "^8.18.1"
   }
 }
