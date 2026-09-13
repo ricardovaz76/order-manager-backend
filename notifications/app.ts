@@ -56,7 +56,7 @@ async function notifyOptedInUsersOfNewOrder(): Promise<void> {
   await sendExpoPush(messages);
 }
 
-async function notifyDriverOfAssignment(record: Record<string, string>, oldRecord: Record<string, string> | null): Promise<void> {
+async function notifyDriverOfAssignment(record: Record<string, unknown>, oldRecord: Record<string, unknown> | null): Promise<void> {
   const newDriverId = record.driver_id as string | null;
   const oldDriverId = oldRecord?.driver_id as string | null;
 
@@ -64,17 +64,28 @@ async function notifyDriverOfAssignment(record: Record<string, string>, oldRecor
     return;
   }
 
-  const { data, error } = await supabase
-    .from("push_token")
-    .select("expo_push_token")
-    .eq("user_id", newDriverId);
+  const { data: driverData, error: driverError } = await supabase
+    .from("delivery_drivers")
+    .select("user_id")
+    .eq("id", newDriverId)
+    .single();
 
-  if (error || !data?.length) {
-    console.error("Failed to load driver push token", error);
+  if (driverError || !driverData) {
+    console.error("Failed to load driver user id", driverError);
     return;
   }
 
-  const messages: ExpoMessage[] = data.map((row) => ({
+  const { data: tokenData, error: tokenError } = await supabase
+    .from("push_token")
+    .select("expo_push_token")
+    .eq("user_id", driverData.user_id);
+
+  if (tokenError || !tokenData?.length) {
+    console.error("Failed to load driver push token", tokenError);
+    return;
+  }
+
+  const messages: ExpoMessage[] = tokenData.map((row) => ({
     to: row.expo_push_token,
     title: "New Delivery assigned",
     body: "You've been assigned a new delivery.",
