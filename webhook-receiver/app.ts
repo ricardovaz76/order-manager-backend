@@ -74,9 +74,6 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
     return { statusCode: 200, body: JSON.stringify({ status: "no text" }) };
   }
 
-  console.log("Customer:", senderId);
-  console.log("Message:", text);
-
   const { data: conversationData, error: conversationError } = await supabase.rpc(
     "get_or_create_conversation_and_log_message",
     { p_messenger_id: senderId, p_message_text: text }
@@ -103,7 +100,9 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
 
   try {
     const extraction = await extractOrder(messages);
-    await writeOrderExtraction(conversationId, extraction);
+    if (extraction.isOrder){
+      await writeOrderExtraction(conversationId, extraction);
+    }
   } catch (error) {
     console.error("Order extraction/write failed", error);
   }

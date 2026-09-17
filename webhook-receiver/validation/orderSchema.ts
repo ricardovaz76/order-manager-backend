@@ -8,6 +8,13 @@ export const OrderItemSchema = z.object({
 });
 
 export const OrderExtractionSchema = z.object({
+  isOrder: z
+    .boolean()
+    .describe(
+      "true only if the conversation contains an actual, concrete food order for specific menu items. " +
+      "false for greetings, questions, small talk, spam, profanity, or anything that is not a real order " +
+      "- even if food is mentioned in parsing. When in doubt, use false."
+    ),
   orderType: z.enum(["pickup", "delivery"]),
   customerAddress: z.string().nullable(),
   customerPhone: z.string().nullable(),
