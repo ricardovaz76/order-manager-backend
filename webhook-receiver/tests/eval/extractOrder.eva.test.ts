@@ -2,7 +2,16 @@ import { describe, it, expect, vi } from "vitest";
 import { extractOrder } from "../../llm/extractOrder";
 import type { OrderExtraction } from "../../validation/orderSchema";
 
-vi.mock("./buildMenuContext", () => ({
+vi.mock("../../lib/getSecrets", () => ({
+  getSecrets: vi.fn().mockResolvedValue({
+    SUPABASE_SERVICE_ROLE_KEY: "unused-in-this-test",
+    META_VERIFY_TOKEN: "unused-in-this-test",
+    META_APP_SECRET: "unused-in-this-test",
+    ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+  })
+}))
+
+vi.mock("../../llm/buildMenuContext", () => ({
   buildMenuContext: vi.fn().mockResolvedValue(
     "- carnitas (available toppings: mixto, costilla, buche, carne, cuero)\n" +
     "- gordita (available toppings: nopales, frijoles, tinga)"
