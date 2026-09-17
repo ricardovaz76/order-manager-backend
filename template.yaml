@@ -14,21 +14,9 @@ Globals:
 Parameters:
   SupabaseUrl:
     Type: String
-  SupabaseServiceRoleKey:
+  BackendSecretsArn:
     Type: String
-    NoEcho: true
-  MetaVerifyToken:
-    Type: String
-    NoEcho: true
-  MetaAppSecret:
-    Type: String
-    NoEcho: true
-  AnthropicApiKey:
-    Type: String
-    NoEcho: true
-  DbWebhookSecret:
-    Type: String
-    NoEcho: true
+    Default: "arn:aws:secretsmanager:us-west-2:750240011710:secret:restaurant-order-manager/backend-YQHyKb"
 
 Resources:
   WebhookFunction:
@@ -42,10 +30,10 @@ Resources:
       Environment:
         Variables:
           SUPABASE_URL: !Ref SupabaseUrl
-          SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceRoleKey
-          META_VERIFY_TOKEN: !Ref MetaVerifyToken
-          META_APP_SECRET: !Ref MetaAppSecret
-          ANTHROPIC_API_KEY: !Ref AnthropicApiKey
+          BACKEND_SECRETS_ARN: !Ref BackendSecretsArn
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref BackendSecretsArn
       Events:
         WebhookVerify:
           Type: Api
@@ -76,8 +64,10 @@ Resources:
       Environment:
         Variables:
           SUPABASE_URL: !Ref SupabaseUrl
-          SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceRoleKey
-          DB_WEBHOOK_SECRET: !Ref DbWebhookSecret
+          BACKEND_SECRETS_ARN: !Ref BackendSecretsArn
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref BackendSecretsArn
       Events:
         NotificationsReceive:
           Type: Api
