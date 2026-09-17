@@ -5,7 +5,6 @@ interface BackendSecrets {
   META_VERIFY_TOKEN: string;
   META_APP_SECRET: string;
   ANTHROPIC_API_KEY: string;
-  DB_WEBHOOK_SECRET: string;
 }
 
 const client = new SecretsManagerClient({});
