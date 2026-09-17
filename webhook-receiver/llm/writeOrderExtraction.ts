@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase";
+import { getSupabaseClient } from "../lib/supabase";
 import { validateOrderItems } from "../validation/validateOrderItems";
 import type { OrderExtraction } from "../validation/orderSchema";
 
@@ -12,6 +12,8 @@ import type { OrderExtraction } from "../validation/orderSchema";
 //   insert the old items and new items for each write
 // - lastly we insert the valide items into the order_items table
 export async function writeOrderExtraction(conversationId: string, extraction: OrderExtraction): Promise<void> {
+  const supabase = await getSupabaseClient();
+
   const { data: orderId, error: orderError } = await supabase
     .rpc("get_or_create_order", { p_conversation_id: conversationId, p_order_type: extraction.orderType,});
 

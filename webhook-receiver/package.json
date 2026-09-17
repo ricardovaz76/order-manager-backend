@@ -13,6 +13,7 @@
     "test": "npm run compile && npm run unit"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1135.0",
     "@langchain/anthropic": "^1.5.9",
     "@langchain/core": "^1.2.9",
     "@supabase/supabase-js": "^2.109.0",

@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase";
+import { getSupabaseClient } from "../lib/supabase";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -11,6 +11,7 @@ let cachedMenuItems: MenuItems[] | null = null;
 let cachedAt = 0;
 
 export async function getCachedMenuItems() {
+  const supabase = await getSupabaseClient();
   const now = Date.now();
   if (cachedMenuItems && now - cachedAt < CACHE_TTL_MS) {
     return cachedMenuItems;
