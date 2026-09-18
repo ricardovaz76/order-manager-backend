@@ -1,12 +1,11 @@
 import { createHmac, timingSafeEqual } from "crypto";
-
-const APP_SECRET = process.env.META_APP_SECRET;
+import { getSecrets } from "../lib/getSecrets";
 
 // This function confirms the request actually came fromMeta, not someone who found the webhook URL 
 // and is Posting a fake payload shaped like a real message.
 // Meta signs the raw request body with the app secret; we recompute that same signature and check if it matches
-export function isValidSignature(rawBody: string, signatureHeader: string | null): boolean {
-  if (!signatureHeader || !APP_SECRET) {
+export async function isValidSignature(rawBody: string, signatureHeader: string | null): Promise<boolean> {
+  if (!signatureHeader) {
     return false;
   }
 
@@ -15,7 +14,8 @@ export function isValidSignature(rawBody: string, signatureHeader: string | null
     return false;
   }
 
-  const expectedSignature = createHmac("sha256", APP_SECRET)
+  const secrets = await getSecrets();
+  const expectedSignature = createHmac("sha256", secrets.META_APP_SECRET)
     .update(rawBody)
     .digest('hex');
 

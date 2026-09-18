@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1135.0",
     "@supabase/supabase-js": "^2.109.0",
     "esbuild": "^0.28.2",
     "ws": "^8.21.3"

@@ -1,7 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { supabase } from "./lib/supabase";
+import { getSupabaseClient } from "./lib/supabase";
+import { getSecrets } from "./lib/getSecrets";
 
-const DB_WEBHOOK_SECRET = process.env.DB_WEBHOOK_SECRET;
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
 interface SupabaseWebhookPayload {
@@ -18,8 +18,9 @@ interface ExpoMessage {
 }
 
 export const handler = async ( event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  const secrets = await getSecrets();
   const secretHeader = event.headers["x-webhook-secret"] ?? event.headers["X-Webhook-Secret"];
-  if (secretHeader !== DB_WEBHOOK_SECRET) {
+  if (secretHeader !== secrets.DB_WEBHOOK_SECRET) {
     return { statusCode: 401, body: JSON.stringify({ status: "Unauthorized" }) };
   }
 
@@ -37,6 +38,7 @@ export const handler = async ( event: APIGatewayProxyEvent): Promise<APIGatewayP
 }
 
 async function notifyOptedInUsersOfNewOrder(): Promise<void> {
+  const supabase = await getSupabaseClient();
   const { data, error } = await supabase
     .from("push_token")
     .select("expo_push_token, users!inner(new_order_notifications_enabled)")
@@ -59,6 +61,7 @@ async function notifyOptedInUsersOfNewOrder(): Promise<void> {
 async function notifyDriverOfAssignment(record: Record<string, unknown>, oldRecord: Record<string, unknown> | null): Promise<void> {
   const newDriverId = record.driver_id as string | null;
   const oldDriverId = oldRecord?.driver_id as string | null;
+  const supabase = await getSupabaseClient();
 
   if (!newDriverId || newDriverId === oldDriverId) {
     return;

@@ -1,11 +1,10 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { supabase } from "./lib/supabase";
+import { getSupabaseClient } from "./lib/supabase";
 import { MessengerWebhookSchema } from "./validation/messengerWebhookSchema";
 import { extractOrder } from "./llm/extractOrder";
 import { writeOrderExtraction } from "./llm/writeOrderExtraction";
 import { isValidSignature } from "./validation/validateMetaSignature";
-
-const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
+import { getSecrets } from "./lib/getSecrets";
 
 export const handler = async ( event: APIGatewayProxyEvent ): Promise<APIGatewayProxyResult> => {
   if (event.httpMethod === "GET") {
@@ -19,13 +18,14 @@ export const handler = async ( event: APIGatewayProxyEvent ): Promise<APIGateway
   return { statusCode: 405, body: JSON.stringify({ status: "Method not allowed" }) };
 };
 
-function handleVerification(event: APIGatewayProxyEvent): APIGatewayProxyResult {
+async function handleVerification(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  const secrets = await getSecrets();
   const params = event.queryStringParameters ?? {};
   const mode = params["hub.mode"];
   const token = params["hub.verify_token"];
   const challenge = params["hub.challenge"];
 
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+  if (mode === "subscribe" && token === secrets.META_VERIFY_TOKEN) {
     console.log("Webhook verified!");
     return { statusCode: 200, body: challenge ?? "" };
   }
@@ -34,6 +34,8 @@ function handleVerification(event: APIGatewayProxyEvent): APIGatewayProxyResult 
 }
 
 async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  const supabase = await getSupabaseClient();
+
   // API Gateway may base64-encode the body depending on content-type handling —
   // decode first so the raw string matches exactly what Meta actually signed
   const rawBody = event.isBase64Encoded
@@ -42,7 +44,7 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
 
   const signatureHeader = event.headers["x-hub-signature-256"] ?? event.headers["X-Hub-Signature-256"];
 
-  if (!isValidSignature(rawBody, signatureHeader ?? null)) {
+  if (!(await isValidSignature(rawBody, signatureHeader ?? null))) {
     console.error("Webhook signature verification failed");
     return { statusCode: 401, body: JSON.stringify({ status: "Invalid signature" }) };
   }
@@ -74,9 +76,6 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
     return { statusCode: 200, body: JSON.stringify({ status: "no text" }) };
   }
 
-  console.log("Customer:", senderId);
-  console.log("Message:", text);
-
   const { data: conversationData, error: conversationError } = await supabase.rpc(
     "get_or_create_conversation_and_log_message",
     { p_messenger_id: senderId, p_message_text: text }
@@ -103,7 +102,9 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
 
   try {
     const extraction = await extractOrder(messages);
-    await writeOrderExtraction(conversationId, extraction);
+    if (extraction.isOrder){
+      await writeOrderExtraction(conversationId, extraction);
+    }
   } catch (error) {
     console.error("Order extraction/write failed", error);
   }

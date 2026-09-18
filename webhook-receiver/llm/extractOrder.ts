@@ -2,6 +2,7 @@ import { ChatAnthropic } from "@langchain/anthropic";
 import { SystemMessage, HumanMessage } from "langchain";
 import { OrderExtractionSchema, type OrderExtraction } from "../validation/orderSchema";
 import { buildMenuContext } from "./buildMenuContext";
+import { getSecrets } from "../lib/getSecrets";
 
 export function buildSystemPrompt(menuContext: string) {
   return `You are an order-parsing assistant for a small Mexican restaurant. Read the customer's message below and extract the current order into structured JSON matching the given schema. Do not invent information the customer didn't state.
@@ -64,14 +65,14 @@ export function buildSystemPrompt(menuContext: string) {
 }
 
 export async function extractOrder(messageHistory: string[]): Promise<OrderExtraction> {
-  const menuContext = await buildMenuContext();
+  const [menuContext, secrets] = await Promise.all([buildMenuContext(), getSecrets()]);
   const systemPrompt = buildSystemPrompt(menuContext);
 
   const conversationText = messageHistory.map((text, i) => `${i+1}. ${text}`).join("\n");
 
   const model = new ChatAnthropic({
     model: "claude-haiku-4-5-20251001",
-    apiKey: process.env.ANTHROPIC_API_KEY,
+    apiKey: secrets.ANTHROPIC_API_KEY,
   });
 
   const structureModel = model.withStructuredOutput(OrderExtractionSchema);
