@@ -23,6 +23,11 @@ jobs:
  
       - name: Set up AWS SAM CLI
         uses: aws-actions/setup-sam@v2
+
+      - name: Debug GitHub context
+        run: |
+          echo "repository: ${{ github.repository }}"
+          echo "ref: ${{ github.ref }}"
  
       - name: Assume AWS role via OIDC
         uses: aws-actions/configure-aws-credentials@v4
