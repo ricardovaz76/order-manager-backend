@@ -1,0 +1,46 @@
+name: Deploy
+ 
+on:
+  push:
+    branches:
+      - main
+ 
+permissions:
+  id-token: write
+  contents: read
+ 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+ 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+ 
+      - name: Set up AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+ 
+      - name: Assume AWS role via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "arn:aws:iam::750240011710:role/aws-sam-cli-managed-productio-PipelineExecutionRole-FBUn9e0ALTmz"
+          aws-region: us-west-2
+ 
+      - name: Build
+        run: sam build
+ 
+      - name: Deploy
+        run: |
+          sam deploy \
+            --stack-name "restaurant-app-backend" \
+            --capabilities CAPABILITY_IAM \
+            --role-arn "arn:aws:iam::750240011710:role/aws-sam-cli-managed-produ-CloudFormationExecutionRo-LD4RO5ZsoApd" \
+            --s3-bucket "aws-sam-cli-managed-production-pip-artifactsbucket-kemab8tvyccc" \
+            --region "us-west-2" \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides SupabaseUrl="${{ secrets.SUPABASE_URL }}"
