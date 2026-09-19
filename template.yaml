@@ -17,6 +17,9 @@ Parameters:
   BackendSecretsArn:
     Type: String
     Default: "arn:aws:secretsmanager:us-west-2:750240011710:secret:restaurant-order-manager/backend-YQHyKb"
+  AlertEmail:
+    Type: String
+    Description: Email address to notify on backend alarms
 
 Resources:
   WebhookFunction:
@@ -55,6 +58,7 @@ Resources:
         Sourcemap: true
         EntryPoints:
         - app.ts
+
   NotificationsFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -85,6 +89,7 @@ Resources:
         Sourcemap: true
         EntryPoints:
         - app.ts
+
   BackendApi:
     Type: AWS::Serverless::Api
     Properties:
@@ -94,6 +99,7 @@ Resources:
           HttpMethod: "*"
           ThrottlingRateLimit: 5
           ThrottlingBurstLimit: 10
+
   WebAcl:
     Type: AWS::WAFv2::WebACL
     Properties:
@@ -118,12 +124,53 @@ Resources:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: RateLimitRule
+
   WebAclAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     DependsOn: BackendApiProdStage
     Properties:
       ResourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${BackendApi}/stages/Prod"
       WebACLArn: !GetAtt WebAcl.Arn
+
+  AlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: restaurant-app-backend-alerts
+
+  AlertsTopicEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertsTopic
+      Protocal: email
+      Endpoint: !Ref AlertEmail
+
+  MessageDroppedMetricFilter:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${WebhookFunction}"
+      FilterPattern: '"MESSAGE_DROPPED"'
+      MetricTransformations:
+        - MetricName: MessageDropped
+          MetricNamespace: RestaurantApp/Webhook
+          MetricValue: "1"
+          DefaultValue: 0
+
+  MessageDroppedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: restaurant-app-webhook-message-dropped
+      AlarmDescription: "Fires when a webhook message is silently dropped due to a DB lookup failure"
+      Namespace: RestaurantApp/Webhook
+      MetricName: MessageDropped
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertsTopic
+  
 
 Outputs:
   WebhookFunction:

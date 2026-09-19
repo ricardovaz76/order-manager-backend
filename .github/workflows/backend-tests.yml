@@ -1,5 +1,5 @@
 name: Backend Tests
- 
+
 on:
   push:
     branches:
@@ -7,27 +7,34 @@ on:
   pull_request:
     branches:
       - main
- 
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
- 
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
- 
+
       - name: Install root dependencies
         run: npm ci
-      
+
       - name: Install webhook-receiver dependencies
         run: npm ci
         working-directory: webhook-receiver
- 
+
+      - name: Install notifications dependencies
+        run: npm ci
+        working-directory: notifications
+
+      - name: Run unit tests
+        run: npx vitest run tests/unit
+
       - name: Run eval tests
         run: npx vitest run tests/eval
         env:

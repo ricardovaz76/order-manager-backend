@@ -2,7 +2,7 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { getSupabaseClient } from "./lib/supabase";
 import { getSecrets } from "./lib/getSecrets";
 
-const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+export const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 
 interface SupabaseWebhookPayload {
   type: "INSERT" | "UPDATE" | "DELETE";
@@ -37,7 +37,7 @@ export const handler = async ( event: APIGatewayProxyEvent): Promise<APIGatewayP
   return { statusCode: 200, body: JSON.stringify({ status: "ok" }) };
 }
 
-async function notifyOptedInUsersOfNewOrder(): Promise<void> {
+export async function notifyOptedInUsersOfNewOrder(): Promise<void> {
   const supabase = await getSupabaseClient();
   const { data, error } = await supabase
     .from("push_token")
@@ -58,7 +58,7 @@ async function notifyOptedInUsersOfNewOrder(): Promise<void> {
   await sendExpoPush(messages);
 }
 
-async function notifyDriverOfAssignment(record: Record<string, unknown>, oldRecord: Record<string, unknown> | null): Promise<void> {
+export async function notifyDriverOfAssignment(record: Record<string, unknown>, oldRecord: Record<string, unknown> | null): Promise<void> {
   const newDriverId = record.driver_id as string | null;
   const oldDriverId = oldRecord?.driver_id as string | null;
   const supabase = await getSupabaseClient();
@@ -97,7 +97,7 @@ async function notifyDriverOfAssignment(record: Record<string, unknown>, oldReco
   await sendExpoPush(messages);
 }
 
-async function sendExpoPush(messages: ExpoMessage[]): Promise<void> {
+export async function sendExpoPush(messages: ExpoMessage[]): Promise<void> {
   if (messages.length === 0) {
     return;
   }
