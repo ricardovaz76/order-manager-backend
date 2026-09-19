@@ -58,55 +58,54 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
 
   const body = result.data;
 
-  // This must be a for loop to grab multiple events at once
-  const messagingEvent = body.entry?.[0]?.messaging?.[0];
-  if (!messagingEvent) {
-    return { statusCode: 200, body: JSON.stringify({ status: "no event" }) };
-  }
+  // For loop meant to capture multiple messages incase the meta payload included a batch of messages
+  for (const entry of body.entry ?? []) {
+    for (const messagingEvent of entry.messaging ?? []) {
+      const senderId = messagingEvent.sender.id;
+      const pageId = messagingEvent.recipient.id;
+      const text = messagingEvent.message?.text;
 
-  const senderId = messagingEvent.sender.id;
-  const pageId = messagingEvent.recipient.id;
-  const text = messagingEvent.message?.text;
+      if (senderId === pageId) {
+        continue;
+      }
 
-  if (senderId === pageId) {
-    return { statusCode: 200, body: JSON.stringify({ status: "ignored" }) };
-  }
+      if (!text) {
+        continue;
+      }
 
-  if (!text) {
-    return { statusCode: 200, body: JSON.stringify({ status: "no text" }) };
-  }
+      const { data: conversationData, error: conversationError } = await supabase.rpc(
+        "get_or_create_conversation_and_log_message",
+        { p_messenger_id: senderId, p_message_text: text }
+      );
 
-  const { data: conversationData, error: conversationError } = await supabase.rpc(
-    "get_or_create_conversation_and_log_message",
-    { p_messenger_id: senderId, p_message_text: text }
-  );
+      const conversationId = conversationData?.[0]?.conversation_id;
+      if (conversationError || conversationId === undefined) {
+        console.log(conversationError);
+        continue;
+      }
 
-  const conversationId = conversationData?.[0]?.conversation_id;
-  if (conversationError || conversationId === undefined) {
-    console.log(conversationError);
-    return { statusCode: 500, body: JSON.stringify({ error: "Failed to get or create conversation" }) };
-  }
+      const { data: messageData, error: messageError } = await supabase
+        .from("messages")
+        .select("message_text")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
 
-  const { data: messageData, error: messageError } = await supabase
-    .from("messages")
-    .select("message_text")
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+      if (messageError) {
+        console.log(messageError);
+        continue;
+      }
 
-  if (messageError) {
-    console.log(messageError);
-    return { statusCode: 500, body: JSON.stringify({ error: "Failed to save message" }) };
-  }
+      const messages = (messageData ?? []).map((m) => m.message_text);
 
-  const messages = (messageData ?? []).map((m) => m.message_text);
-
-  try {
-    const extraction = await extractOrder(messages);
-    if (extraction.isOrder){
-      await writeOrderExtraction(conversationId, extraction);
+      try {
+        const extraction = await extractOrder(messages);
+        if (extraction.isOrder) {
+          await writeOrderExtraction(conversationId, extraction);
+        }
+      } catch (error) {
+        console.error("Order extraction/write failed", error);
+      }
     }
-  } catch (error) {
-    console.error("Order extraction/write failed", error);
   }
 
   return { statusCode: 200, body: JSON.stringify({ status: "ok" }) };
