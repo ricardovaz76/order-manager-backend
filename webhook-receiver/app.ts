@@ -80,7 +80,7 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
 
       const conversationId = conversationData?.[0]?.conversation_id;
       if (conversationError || conversationId === undefined) {
-        console.log(conversationError);
+        console.error("MESSAGE_DROPPED", { reason: "conversation_lookup_failed", conversationError });
         continue;
       }
 
@@ -91,7 +91,7 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
         .order("created_at", { ascending: true });
 
       if (messageError) {
-        console.log(messageError);
+        console.error("MESSAGE_DROPPED", { reason: "message_fetch_failed", messageError });
         continue;
       }
 
@@ -103,7 +103,7 @@ async function handleWebhook(event: APIGatewayProxyEvent): Promise<APIGatewayPro
           await writeOrderExtraction(conversationId, extraction);
         }
       } catch (error) {
-        console.error("Order extraction/write failed", error);
+        console.error("MESSAGE_DROPPED", { reason: "order_extraction_failed", error });
       }
     }
   }
