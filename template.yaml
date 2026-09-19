@@ -141,7 +141,7 @@ Resources:
     Type: AWS::SNS::Subscription
     Properties:
       TopicArn: !Ref AlertsTopic
-      Protocal: email
+      Protocol: email
       Endpoint: !Ref AlertEmail
 
   MessageDroppedMetricFilter:
