@@ -120,7 +120,7 @@ Resources:
             MetricName: RateLimitRule
   WebAclAssociation:
     Type: AWS::WAFv2::WebACLAssociation
-    DependsOn: BackendApiStage
+    DependsOn: BackendApiProdStage
     Properties:
       ResourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${BackendApi}/stages/Prod"
       WebACLId: !GetAtt WebAcl.Arn
