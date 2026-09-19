@@ -58,7 +58,7 @@ export async function notifyOptedInUsersOfNewOrder(): Promise<void> {
   await sendExpoPush(messages);
 }
 
-async function notifyDriverOfAssignment(record: Record<string, unknown>, oldRecord: Record<string, unknown> | null): Promise<void> {
+export async function notifyDriverOfAssignment(record: Record<string, unknown>, oldRecord: Record<string, unknown> | null): Promise<void> {
   const newDriverId = record.driver_id as string | null;
   const oldDriverId = oldRecord?.driver_id as string | null;
   const supabase = await getSupabaseClient();
