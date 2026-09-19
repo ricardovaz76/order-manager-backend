@@ -38,11 +38,13 @@ Resources:
         WebhookVerify:
           Type: Api
           Properties:
+            RestApiId: !Ref BackendApi
             Path: /webhook
             Method: get
         WebhookReceive:
           Type: Api
           Properties:
+            RestApiId: !Ref BackendApi
             Path: /webhook
             Method: post
     Metadata:
@@ -72,6 +74,7 @@ Resources:
         NotificationsReceive:
           Type: Api
           Properties:
+            RestApiId: !Ref BackendApi
             Path: /notifications
             Method: post
     Metadata:
@@ -82,20 +85,52 @@ Resources:
         Sourcemap: true
         EntryPoints:
         - app.ts
+  BackendApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingRateLimit: 5
+          ThrottlingBurstLimit: 10
+  WebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: restaurant-app-backend-waf
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: restaurant-app-backend-waf
+      Rules:
+        - Name: RateLimitRule
+          Priority: 0
+          Action:
+            Block: {}
+          Statement:
+            RateBasedStatement:
+              Limit: 100
+              AggregateKeyType: IP
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: RateLimitRule
+  WebAclAssociation:
+    Type: AWS::WAFv2:WebACLAssociation
+    Properties:
+      ResourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${BackendApi}/stages/Prod"
+      WebACLId: !GetAtt WebAcl.Arn
 
 Outputs:
-  WebhookApi:
-    Description: API Gateway endpoint URL for Prod stage for the webhook function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/webhook/"
   WebhookFunction:
     Description: Webhook Lambda Function ARN
     Value: !GetAtt WebhookFunction.Arn
   WebhookFunctionIamRole:
     Description: Implicit IAM Role created for the webhook function
     Value: !GetAtt WebhookFunctionRole.Arn
-  NotificationsApi:
-    Description: API Gateway endpoint URL for Prod stage for the notifications function
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/Prod/notifications"
   NotificationsFunctionIamRole:
     Description: Implicit IAM Role created for the notifications function
     Value: !GetAtt NotificationsFunctionRole.Arn
