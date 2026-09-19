@@ -119,7 +119,7 @@ Resources:
             CloudWatchMetricsEnabled: true
             MetricName: RateLimitRule
   WebAclAssociation:
-    Type: AWS::WAFv2:WebACLAssociation
+    Type: AWS::WAFv2::WebACLAssociation
     Properties:
       ResourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${BackendApi}/stages/Prod"
       WebACLId: !GetAtt WebAcl.Arn
