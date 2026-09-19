@@ -18,7 +18,7 @@ export const handler = async ( event: APIGatewayProxyEvent ): Promise<APIGateway
   return { statusCode: 405, body: JSON.stringify({ status: "Method not allowed" }) };
 };
 
-async function handleVerification(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+export async function handleVerification(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const secrets = await getSecrets();
   const params = event.queryStringParameters ?? {};
   const mode = params["hub.mode"];
