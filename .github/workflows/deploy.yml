@@ -43,4 +43,4 @@ jobs:
             --region "us-west-2" \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
-            --parameter-overrides SupabaseUrl="${{ secrets.SUPABASE_URL }}" AlertEmail="${{ vars.AlertEmail }}"
+            --parameter-overrides SupabaseUrl="${{ secrets.SUPABASE_URL }}" AlertEmail="${{ vars.ALERT_EMAIL }}"
