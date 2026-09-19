@@ -123,7 +123,7 @@ Resources:
     DependsOn: BackendApiProdStage
     Properties:
       ResourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${BackendApi}/stages/Prod"
-      WebACLId: !GetAtt WebAcl.Arn
+      WebACLArn: !GetAtt WebAcl.Arn
 
 Outputs:
   WebhookFunction:
