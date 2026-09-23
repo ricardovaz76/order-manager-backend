@@ -32,6 +32,10 @@ jobs:
         run: npm ci
         working-directory: notifications
 
+      - name: Install weekly-cleanup dependencies
+        run: npm ci
+        working-directory: weekly-cleanup
+
       - name: Run unit tests
         run: npx vitest run tests/unit
 
