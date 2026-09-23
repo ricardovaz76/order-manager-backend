@@ -14,7 +14,8 @@
   "description": "",
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.1138.0",
-    "@supabase/supabase-js": "^2.109.0"
+    "@supabase/supabase-js": "^2.109.0",
+    "esbuild": "^0.28.2"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.163",
