@@ -89,7 +89,7 @@ Resources:
         Sourcemap: true
         EntryPoints:
         - app.ts
-
+      
   WeeklyCleanupFunction:
     Type: AWS::Serverless::Function
     Properties:
