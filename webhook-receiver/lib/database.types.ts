@@ -81,19 +81,16 @@ export type Database = {
         Row: {
           availability_status: Database["public"]["Enums"]["driver_availability_enum"]
           id: string
-          phone: string
           user_id: string
         }
         Insert: {
           availability_status?: Database["public"]["Enums"]["driver_availability_enum"]
           id?: string
-          phone: string
           user_id: string
         }
         Update: {
           availability_status?: Database["public"]["Enums"]["driver_availability_enum"]
           id?: string
-          phone?: string
           user_id?: string
         }
         Relationships: [
