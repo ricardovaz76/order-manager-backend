@@ -18,7 +18,48 @@ The system is built with privacy as a first-class concern: customer contact info
 
 ## Architecture
 
-> _Diagram to be added here._
+```mermaid
+flowchart TD
+    Customer([Customer]) -->|sends order via Messenger| Meta[Meta / Facebook Messenger]
+    Meta -->|webhook event<br/>signature verified against Meta App Secret| APIGW1[API Gateway]
+    APIGW1 --> WR["webhook-receiver<br/><i>LangChain + Claude Haiku</i><br/>parses conversation, validates<br/>against Zod schema + menu_items"]
+
+    MenuItems[("menu_items")]
+    WR -.->|validate parsed items against| MenuItems
+
+    WR --> Orders[("orders")]
+    WR --> OrderItems[("order_items")]
+    WR --> CustomerInfo[("customer_info")]
+    WR --> Conversations[("conversations")]
+    WR --> Messages[("messages")]
+
+    Orders -->|new order INSERT| DBWebhook{{"Supabase Database Webhook"}}
+    CustomerInfo -->|driver_id UPDATE| DBWebhook
+    DBWebhook -->|POST /notifications| APIGW2[API Gateway]
+    APIGW2 --> NOTIF[notifications Lambda]
+
+    NOTIF -->|push, opt-in| Staff([Staff — mobile app])
+    NOTIF -->|push, mandatory| Drivers([Drivers — mobile app])
+
+    Staff -.->|assign driver, work Kanban board<br/><i>mobile app, separate repo</i>| CustomerInfo
+    Drivers -.->|mark delivered<br/><i>mobile app, separate repo</i>| Orders
+
+    Orders -->|status → completed,<br/>or row deleted (cancellation)| CascadeTrigger{{"cascade delete trigger<br/><i>SECURITY DEFINER</i>"}}
+    CascadeTrigger --> CustomerInfo
+    CascadeTrigger --> Conversations
+    Conversations -->|cascade| Messages
+
+    Orders -->|status → completed| NullTrigger{{"null additional_info trigger"}}
+    NullTrigger --> Orders
+
+    EB["EventBridge Scheduler<br/>Mon 12:00 AM Pacific"] --> WC[weekly-cleanup Lambda]
+    WC -->|delete where active_status = active| Orders
+
+    SM[("Secrets Manager")]
+    SM -.->|SUPABASE_URL + service-role key| WR
+    SM -.-> NOTIF
+    SM -.-> WC
+```
 
 The backend consists of three AWS Lambda functions, deployed via AWS SAM and built with esbuild:
 
