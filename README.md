@@ -1,127 +1,103 @@
-# restaurant-app-backend
+# Carnitas Order Manager: Backend
 
-This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js_20-339933?style=flat&logo=node.js&logoColor=white)
+![AWS Lambda](https://img.shields.io/badge/AWS_Lambda-FF9900?style=flat&logo=awslambda&logoColor=white)
+![AWS SAM](https://img.shields.io/badge/AWS_SAM-FF9900?style=flat&logo=amazonaws&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=flat&logo=supabase&logoColor=white)
+![Anthropic](https://img.shields.io/badge/Anthropic_Claude-D97757?style=flat&logo=anthropic&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-- hello-world - Code for the application's Lambda function written in TypeScript.
-- events - Invocation events that you can use to invoke the function.
-- hello-world/tests - Unit tests for the application code. 
-- template.yaml - A template that defines the application's AWS resources.
+An AWS Lambda backend that receives customer orders sent through Facebook Messenger, uses an LLM to parse free-form conversation into structured order data, and coordinates order and delivery notifications for restaurant staff and drivers — built for a small, weekends-only family restaurant operation.
 
-The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+## Overview
 
-If you prefer to use an integrated development environment (IDE) to build and test your application, you can use the AWS Toolkit.  
-The AWS Toolkit is an open source plug-in for popular IDEs that uses the SAM CLI to build and deploy serverless applications on AWS. The AWS Toolkit also adds a simplified step-through debugging experience for Lambda function code. See the following links to get started.
+Customers place orders by messaging the restaurant's Facebook Page. Rather than requiring a rigid order form, the backend reads the natural-language conversation and uses an LLM to extract structured order details — items, quantities, special instructions, and delivery information — which are then validated and written to the database for staff and drivers to act on through the companion mobile app.
 
-* [CLion](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [GoLand](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [IntelliJ](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [WebStorm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [Rider](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [PhpStorm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [PyCharm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [RubyMine](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [DataGrip](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html)
-* [Visual Studio](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/welcome.html)
+The system is built with privacy as a first-class concern: customer contact information and conversation history are automatically deleted the moment an order is completed or canceled, and any order that's abandoned mid-conversation is swept up and deleted on a weekly schedule. No customer data is retained beyond what's needed to fulfill an active order.
 
-## Deploy the sample application
+## Architecture
 
-The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to run your functions in an Amazon Linux environment that matches Lambda. It can also emulate your application's build environment and API.
+> _Diagram to be added here._
 
-To use the SAM CLI, you need the following tools.
+The backend consists of three AWS Lambda functions, deployed via AWS SAM and built with esbuild:
 
-* SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* Node.js - [Install Node.js 20](https://nodejs.org/en/), including the NPM package management tool.
-* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community)
+- **`webhook-receiver`** — Receives incoming Messenger webhook events from Meta, uses an LLM (via LangChain, backed by Anthropic's Claude) to parse the conversation into a structured, schema-validated order (Zod), and writes it to the database.
+- **`notifications`** — Triggered by a Supabase Database Webhook (not client-side) whenever a new order/conversation starts or a delivery is assigned. Sends push notifications to staff and drivers accordingly.
+- **`weekly-cleanup`** — Runs on a schedule (EventBridge Scheduler, every Monday at 12:00 AM Pacific) to delete any order that was started but never completed or canceled, along with all associated customer data.
 
-To build and deploy your application for the first time, run the following in your shell:
+Each function maintains its own `lib/` with a Supabase client and connects using a service-role key, since the backend is a trusted process with no end-user session.
+
+## Data Privacy & Retention
+
+This system is designed to retain customer data for as little time as possible:
+
+- When an order is marked complete or canceled, a database trigger automatically and permanently deletes the associated customer contact information, conversation history, and messages.
+- Any order that never reaches completion or cancellation — for example, an abandoned conversation — is deleted automatically every week, along with any associated customer data.
+- Only non-identifying order records (items and completion status) are retained, for internal tracking such as counting completed orders. Special-instruction notes on these retained records are cleared at the moment of completion, independent of the rest of the deletion logic.
+
+## Tech Stack
+
+- **Runtime:** Node.js 20.x, TypeScript
+- **Infrastructure:** AWS SAM (CloudFormation), AWS Lambda, API Gateway, EventBridge Scheduler
+- **Secrets:** AWS Secrets Manager
+- **LLM pipeline:** LangChain + Anthropic Claude, with Zod schema validation
+- **Database:** Supabase (Postgres), with Row Level Security and SECURITY DEFINER triggers for cascading deletion
+- **Build:** esbuild
+- **CI/CD:** GitHub Actions (OIDC-based deploy on merge to `main`)
+
+## Project Structure
+
+```
+.
+├── webhook-receiver/     # Messenger webhook intake + LLM order parsing
+│   └── lib/              # Supabase client
+├── notifications/        # Push notification dispatch
+│   └── lib/              # Supabase client
+├── weekly-cleanup/       # Scheduled cleanup of abandoned orders
+│   └── lib/              # Supabase client
+└── template.yaml         # SAM infrastructure definition
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20.x
+- AWS CLI, configured with appropriate credentials
+- AWS SAM CLI
+- A Supabase project, with the required tables, RLS policies, and triggers set up (schema is managed directly via SQL in the Supabase dashboard — not version-controlled in this repo)
+
+### Installation
+
+Each function manages its own dependencies independently:
+
+```bash
+cd webhook-receiver && npm install
+cd ../notifications && npm install
+cd ../weekly-cleanup && npm install
+```
+
+### Local Development
 
 ```bash
 sam build
-sam deploy --guided
+sam local invoke <FunctionName> --event events/<event-file>.json
 ```
 
-The first command will build the source of your application. The second command will package and deploy your application to AWS, with a series of prompts:
+## Deployment
 
-* **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region, and a good starting point would be something matching your project name.
-* **AWS Region**: The AWS region you want to deploy your app to.
-* **Confirm changes before deploy**: If set to yes, any change sets will be shown to you before execution for manual review. If set to no, the AWS SAM CLI will automatically deploy application changes.
-* **Allow SAM CLI IAM role creation**: Many AWS SAM templates, including this example, create AWS IAM roles required for the AWS Lambda function(s) included to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack which creates or modifies IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy this example you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
-* **Save arguments to samconfig.toml**: If set to yes, your choices will be saved to a configuration file inside the project, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
-
-You can find your API Gateway Endpoint URL in the output values displayed after deployment.
-
-## Use the SAM CLI to build and test locally
-
-Build your application with the `sam build` command.
+Deployment runs automatically via GitHub Actions on merge to `main`. To deploy manually:
 
 ```bash
-restaurant-app-backend$ sam build
+sam build
+sam deploy
 ```
 
-The SAM CLI installs dependencies defined in `hello-world/package.json`, compiles TypeScript with esbuild, creates a deployment package, and saves it in the `.aws-sam/build` folder.
+## License
 
-Test a single function by invoking it directly with a test event. An event is a JSON document that represents the input that the function receives from the event source. Test events are included in the `events` folder in this project.
+Distributed under the MIT License. See `LICENSE` for details.
 
-Run functions locally and invoke them with the `sam local invoke` command.
+## Contact
 
-```bash
-restaurant-app-backend$ sam local invoke HelloWorldFunction --event events/event.json
-```
-
-The SAM CLI can also emulate your application's API. Use the `sam local start-api` to run the API locally on port 3000.
-
-```bash
-restaurant-app-backend$ sam local start-api
-restaurant-app-backend$ curl http://localhost:3000/
-```
-
-The SAM CLI reads the application template to determine the API's routes and the functions that they invoke. The `Events` property on each function's definition includes the route and method for each path.
-
-```yaml
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-```
-
-## Add a resource to your application
-The application template uses AWS Serverless Application Model (AWS SAM) to define application resources. AWS SAM is an extension of AWS CloudFormation with a simpler syntax for configuring common serverless application resources such as functions, triggers, and APIs. For resources not included in [the SAM specification](https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md), you can use standard [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html) resource types.
-
-## Fetch, tail, and filter Lambda function logs
-
-To simplify troubleshooting, SAM CLI has a command called `sam logs`. `sam logs` lets you fetch logs generated by your deployed Lambda function from the command line. In addition to printing the logs on the terminal, this command has several nifty features to help you quickly find the bug.
-
-`NOTE`: This command works for all AWS Lambda functions; not just the ones you deploy using SAM.
-
-```bash
-restaurant-app-backend$ sam logs -n HelloWorldFunction --stack-name restaurant-app-backend --tail
-```
-
-You can find more information and examples about filtering Lambda function logs in the [SAM CLI Documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
-
-## Unit tests
-
-Tests are defined in the `hello-world/tests` folder in this project. Use NPM to install the [Jest test framework](https://jestjs.io/) and run unit tests.
-
-```bash
-restaurant-app-backend$ cd hello-world
-hello-world$ npm install
-hello-world$ npm run test
-```
-
-## Cleanup
-
-To delete the sample application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
-
-```bash
-sam delete --stack-name restaurant-app-backend
-```
-
-## Resources
-
-See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) for an introduction to SAM specification, the SAM CLI, and serverless application concepts.
-
-Next, you can use AWS Serverless Application Repository to deploy ready to use Apps that go beyond hello world samples and learn how authors developed their applications: [AWS Serverless Application Repository main page](https://aws.amazon.com/serverless/serverlessrepo/)
+Ricardo Vazquez - [ricardo.vazquez2001@gmail.com](mailto:ricardo.vazquez2001@gmail.com)
