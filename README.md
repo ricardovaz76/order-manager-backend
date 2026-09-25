@@ -40,7 +40,7 @@ Each function maintains its own `lib/` with a Supabase client and connects using
   <img src="diagrams/waf-diagram.svg" alt="WAF request flow diagram: an incoming request first hits a WAFv2 WebAcl with a rate-limit rule; requests over the limit get a 403 and never reach API Gateway, while requests within the limit pass through to the BackendApi Prod stage and on to the Lambda functions. A WebAclAssociation resource is what actually binds the WebAcl to the API Gateway stage.">
 </picture>
 
-`AWS::WAFv2::WebACL` and `AWS::WAFv2::WebACLAssociation` are two separate CloudFormation resources with two separate jobs: the `WebAcl` defines the rules (a rate limit of >100 requests per 5 minutes per IP, default-allow otherwise), while the `WebAclAssociation` is what actually switches those rules on for the API Gateway stage. Without the association, the `WebAcl` would deploy fully configured but sit unused — every request would skip it and hit the Lambdas unfiltered.
+`AWS::WAFv2::WebACL` and `AWS::WAFv2::WebACLAssociation` are two separate CloudFormation resources with two separate jobs: the `WebAcl` defines the rules (a rate limit of >100 requests per 5 minutes per IP, default-allow otherwise), while the `WebAclAssociation` is what actually switches those rules on for the API Gateway stage.
 
 ## Data Privacy & Retention
 
