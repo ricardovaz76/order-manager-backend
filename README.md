@@ -129,3 +129,7 @@ Distributed under the MIT License. See `LICENSE` for details.
 ## Contact
 
 Ricardo Vazquez - [ricardo.vazquez2001@gmail.com](mailto:ricardo.vazquez2001@gmail.com)
+
+## Related Repositories
+
+- **[Mobile App](https://github.com/ricardovaz76/carnitas-order-manager-mobile)** — The companion React Native/Expo app for staff and drivers
