@@ -20,7 +20,7 @@ The system is built with privacy as a first-class concern: customer contact info
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="diagrams/architecture-diagram-dark.svg">
-  <img src="diagramsarchitecture-diagram.svg" alt="Architecture diagram: Customer messages via Facebook Messenger, through API Gateway to webhook-receiver, which parses and writes to Supabase; Supabase triggers cleanup and fires DB webhooks to the notifications Lambda; EventBridge triggers weekly-cleanup; Secrets Manager feeds all three Lambdas; the separate mobile app repo marks orders complete or canceled back in Supabase.">
+  <img src="diagrams/architecture-diagram.svg" alt="Architecture diagram: Customer messages via Facebook Messenger, through API Gateway to webhook-receiver, which parses and writes to Supabase; Supabase triggers cleanup and fires DB webhooks to the notifications Lambda; EventBridge triggers weekly-cleanup; Secrets Manager feeds all three Lambdas; the separate mobile app repo marks orders complete or canceled back in Supabase.">
 </picture>
 
 The backend consists of three AWS Lambda functions, deployed via AWS SAM and built with esbuild:
