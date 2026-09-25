@@ -18,6 +18,8 @@ The system is built with privacy as a first-class concern: customer contact info
 
 ## Architecture
 
+### Backend
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="diagrams/architecture-diagram-dark.svg">
   <img src="diagrams/architecture-diagram.svg" alt="Architecture diagram: Customer messages via Facebook Messenger, through API Gateway to webhook-receiver, which parses and writes to Supabase; Supabase triggers cleanup and fires DB webhooks to the notifications Lambda; EventBridge triggers weekly-cleanup; Secrets Manager feeds all three Lambdas; the separate mobile app repo marks orders complete or canceled back in Supabase.">
@@ -30,6 +32,15 @@ The backend consists of three AWS Lambda functions, deployed via AWS SAM and bui
 - **`weekly-cleanup`** — Runs on a schedule (EventBridge Scheduler, every Monday at 12:00 AM Pacific) to delete any order that was started but never completed or canceled, along with all associated customer data.
 
 Each function maintains its own `lib/` with a Supabase client and connects using a service-role key, since the backend is a trusted process with no end-user session.
+
+### WAF — Rate Limiting
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="diagrams/waf-diagram-dark.svg">
+  <img src="diagrams/waf-diagram.svg" alt="WAF request flow diagram: an incoming request first hits a WAFv2 WebAcl with a rate-limit rule; requests over the limit get a 403 and never reach API Gateway, while requests within the limit pass through to the BackendApi Prod stage and on to the Lambda functions. A WebAclAssociation resource is what actually binds the WebAcl to the API Gateway stage.">
+</picture>
+
+`AWS::WAFv2::WebACL` and `AWS::WAFv2::WebACLAssociation` are two separate CloudFormation resources with two separate jobs: the `WebAcl` defines the rules (a rate limit of >100 requests per 5 minutes per IP, default-allow otherwise), while the `WebAclAssociation` is what actually switches those rules on for the API Gateway stage. Without the association, the `WebAcl` would deploy fully configured but sit unused — every request would skip it and hit the Lambdas unfiltered.
 
 ## Data Privacy & Retention
 

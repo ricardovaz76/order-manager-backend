@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 730" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <style>
+      .node-label { font-weight: 700; font-size: 15px; }
+      .node-sub { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 10.5px; }
+      .edge-label { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-weight: 600; font-size: 11px; }
+      .path-line { fill: none; stroke: #2C3A4A; stroke-width: 2; }
+    </style>
+    <marker id="arrow-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6C9BFF"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="740" height="730" fill="#0E1520"/>
+  <rect x="12" y="12" width="716" height="706" rx="16" fill="#16202C" stroke="#2C3A4A"/>
+
+  <g transform="translate(-30,20)">
+    <!-- edges -->
+    <path class="path-line" d="M 360 62 L 360 100" />
+    <path class="path-line" d="M 300 220 C 260 250, 220 260, 190 290" />
+    <path class="path-line" d="M 420 220 C 460 250, 500 260, 530 290" />
+    <path class="path-line" d="M 530 350 C 480 380, 420 400, 372 430" />
+    <path class="path-line" d="M 360 500 L 360 540" />
+    <path class="path-line" d="M 300 610 C 270 630, 260 640, 240 660" />
+    <path class="path-line" d="M 420 610 C 450 630, 460 640, 480 660" />
+
+    <!-- WebAclAssociation binding line -->
+    <path d="M 470 175 C 560 185, 610 260, 545 320" fill="none" stroke="#6C9BFF" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arrow-accent)" />
+    <text x="585" y="240" class="edge-label" fill="#6C9BFF">WebAclAssociation</text>
+    <text x="585" y="256" class="node-sub" fill="#6C9BFF">binds the two ↑</text>
+
+    <!-- Client -->
+    <rect x="270" y="10" width="180" height="52" rx="10" fill="#1C2836" stroke="#2C3A4A" />
+    <text x="360" y="32" text-anchor="middle" class="node-label" fill="#E8ECF2">Incoming request</text>
+    <text x="360" y="48" text-anchor="middle" class="node-sub" fill="#93A1B0">Meta, Supabase, or anyone</text>
+
+    <!-- WAF WebAcl -->
+    <rect x="230" y="100" width="260" height="120" rx="12" fill="#103330" stroke="#3DD9CB" stroke-width="1.5" />
+    <text x="360" y="128" text-anchor="middle" class="node-label" fill="#3DD9CB">WebAcl</text>
+    <text x="360" y="148" text-anchor="middle" class="node-sub" fill="#93A1B0">RateLimitRule: &gt;100 req / 5min / IP</text>
+    <text x="360" y="164" text-anchor="middle" class="node-sub" fill="#93A1B0">DefaultAction: Allow</text>
+    <text x="360" y="188" text-anchor="middle" class="edge-label" fill="#3DD9CB">the rulebook —</text>
+    <text x="360" y="204" text-anchor="middle" class="edge-label" fill="#3DD9CB">not attached to anything by itself</text>
+
+    <!-- Block branch -->
+    <rect x="90" y="290" width="200" height="56" rx="10" fill="#3A1518" stroke="#FF7A80" />
+    <text x="190" y="313" text-anchor="middle" class="node-label" fill="#FF7A80">403 — Blocked</text>
+    <text x="190" y="330" text-anchor="middle" class="node-sub" fill="#93A1B0">never reaches API Gateway</text>
+    <text x="140" y="278" class="edge-label" fill="#FF7A80">over limit</text>
+
+    <!-- Allow branch -->
+    <rect x="430" y="290" width="200" height="56" rx="10" fill="#12301F" stroke="#4FCB8F" />
+    <text x="530" y="313" text-anchor="middle" class="node-label" fill="#4FCB8F">Allowed</text>
+    <text x="530" y="330" text-anchor="middle" class="node-sub" fill="#93A1B0">passes through</text>
+    <text x="545" y="278" class="edge-label" fill="#4FCB8F">within limit</text>
+
+    <!-- API Gateway -->
+    <rect x="210" y="430" width="300" height="70" rx="12" fill="#1B2A44" stroke="#6C9BFF" stroke-width="1.5" />
+    <text x="360" y="458" text-anchor="middle" class="node-label" fill="#6C9BFF">BackendApi — Prod stage</text>
+    <text x="360" y="476" text-anchor="middle" class="node-sub" fill="#93A1B0">Throttling: 5 req/s, burst 10</text>
+    <text x="360" y="492" text-anchor="middle" class="node-sub" fill="#93A1B0">the resource WebAclAssociation points at</text>
+
+    <!-- Lambdas -->
+    <rect x="140" y="540" width="200" height="70" rx="12" fill="#1C2836" stroke="#2C3A4A" />
+    <text x="240" y="568" text-anchor="middle" class="node-label" fill="#E8ECF2">WebhookFunction</text>
+    <text x="240" y="586" text-anchor="middle" class="node-sub" fill="#93A1B0">GET / POST /webhook</text>
+
+    <rect x="380" y="540" width="200" height="70" rx="12" fill="#1C2836" stroke="#2C3A4A" />
+    <text x="480" y="568" text-anchor="middle" class="node-label" fill="#E8ECF2">NotificationsFunction</text>
+    <text x="480" y="586" text-anchor="middle" class="node-sub" fill="#93A1B0">POST /notify</text>
+
+    <!-- footer note -->
+    <text x="360" y="670" text-anchor="middle" class="node-sub" fill="#93A1B0">Only a request that clears WebAcl ever triggers a Lambda invocation.</text>
+  </g>
+</svg>
