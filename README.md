@@ -27,9 +27,23 @@ The system is built with privacy as a first-class concern: customer contact info
 
 The backend consists of three AWS Lambda functions, deployed via AWS SAM and built with esbuild:
 
-- **`webhook-receiver`** — Receives incoming Messenger webhook events from Meta and verifies the signature header with the Meta App Secret, uses an LLM (via LangChain, backed by Anthropic's Claude) to parse the conversation into a structured order, validates the LLM output against a Zod schema, cross-checks parsed items against `menu_items`, and writes the order to the database.
-- **`notifications`** — Triggered by a Supabase Database Webhook (not client-side) on a new order INSERT or a `driver_id` UPDATE on `customer_info`. Sends new-order push alerts to opt-in staff, and delivery-assignment push alerts to drivers (mandatory, not opt-in).
-- **`weekly-cleanup`** — Runs on a schedule (EventBridge Scheduler, every Monday at 12:00 AM Pacific) to delete any order that was started but never completed or canceled, along with all associated customer data.
+- **`webhook-receiver`**
+  - Receives incoming Messenger webhook events from Meta
+  - Verifies the signature header with the Meta App Secret
+  - Parses the conversation into a structured order via LLM (LangChain + Anthropic Claude)
+  - Validates the LLM output against a Zod schema
+  - Cross-checks parsed items against `menu_items`
+  - Writes the order to the database
+
+- **`notifications`**
+  - Triggered by a Supabase Database Webhook (not client-side)
+  - Fires on a new order INSERT, or a `driver_id` UPDATE on `customer_info`
+  - Sends new-order push alerts to opt-in staff
+  - Sends delivery-assignment push alerts to drivers (mandatory, not opt-in)
+
+- **`weekly-cleanup`**
+  - Runs on a schedule (EventBridge Scheduler, every Monday at 12:00 AM Pacific)
+  - Deletes any order that was started but never completed or canceled, along with all associated customer data
 
 Each function maintains its own `lib/` with a Supabase client and connects using a service-role key, since the backend is a trusted process with no end-user session.
 
