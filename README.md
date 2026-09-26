@@ -78,10 +78,18 @@ This system is designed to retain customer data for as little time as possible:
 
 ```
 .
+├── .github/
+│   └── workflows/        # CI: backend-tests.yml, deploy.yml
 ├── webhook-receiver/     # Messenger webhook intake + LLM order parsing
-│   └── lib/              # Supabase client
+│   ├── lib/              # Supabase client
+│   ├── llm/              # Menu-context building, order extraction, validated DB writes
+│   ├── validation/       # Zod schemas, signature verification, order-item validation
+│   └── tests/
+│       ├── unit/         # handleVerification, isValidSignature, validateOrderItems
+│       └── evals/        # LLM output structure + menu-item accuracy checks
 ├── notifications/        # Push notification dispatch
-│   └── lib/              # Supabase client
+│   ├── lib/              # Supabase client
+│   └── tests/            # notifyDriver, notify opted-in users, sendExpoPush
 ├── weekly-cleanup/       # Scheduled cleanup of abandoned orders
 │   └── lib/              # Supabase client
 └── template.yaml         # SAM infrastructure definition
